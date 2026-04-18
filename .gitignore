@@ -62,7 +62,6 @@ ios/Runner/GeneratedPluginRegistrant.h
 ios/Runner/GeneratedPluginRegistrant.m
 
 # Build and plugin outputs
-pubspec.lock
 build/
 .dart_tool/
 

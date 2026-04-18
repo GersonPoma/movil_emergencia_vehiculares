@@ -151,7 +151,7 @@ class VehiculoCard extends StatelessWidget {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Row(
@@ -162,13 +162,17 @@ class VehiculoCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: _getColorFromString(color),
                           borderRadius: BorderRadius.circular(3),
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                            width: 1,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 8),
                       Text(
                         color,
-                        style: const TextStyle(
-                          color: Colors.black,
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -211,7 +215,7 @@ class VehiculoCard extends StatelessWidget {
     final colorMap = {
       'rojo': Colors.red,
       'azul': Colors.blue,
-      'blanco': Colors.grey.shade200,
+      'blanco': Colors.white,
       'negro': Colors.black,
       'gris': Colors.grey,
       'verde': Colors.green,

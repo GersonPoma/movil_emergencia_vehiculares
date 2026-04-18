@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/cuentas/storage_service.dart';
+import 'emergencias/enviar_ubicacion_screen.dart';
+import 'emergencias/historial_incidentes_screen.dart';
 
 class HomeClienteScreen extends StatefulWidget {
   const HomeClienteScreen({Key? key}) : super(key: key);
@@ -125,10 +127,23 @@ class _HomeClienteScreenState extends State<HomeClienteScreen> {
                     icon: Icons.emergency,
                     label: 'Reportar\nEmergencia',
                     color: Colors.red,
-                    onTap: () {
-                      // TODO: Navegar a pantalla de reportar emergencia
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Reportar Emergencia')),
+                    onTap: () async {
+                      final token = await _storageService.getToken();
+                      final usuarioId = await _storageService.getIdUsuario();
+                      if (!mounted) return;
+                      if (token == null || usuarioId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sesión no válida')),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => EnviarUbicacionScreen(
+                            usuarioId: usuarioId,
+                            token: token,
+                          ),
+                        ),
                       );
                     },
                   ),
@@ -151,11 +166,22 @@ class _HomeClienteScreenState extends State<HomeClienteScreen> {
                     icon: Icons.history,
                     label: 'Historial',
                     color: Colors.orange,
-                    onTap: () {
-                      // TODO: Navegar a historial de emergencias
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Historial de Emergencias'),
+                    onTap: () async {
+                      final token = await _storageService.getToken();
+                      final usuarioId = await _storageService.getIdUsuario();
+                      if (!mounted) return;
+                      if (token == null || usuarioId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sesión no válida')),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => HistorialIncidentesScreen(
+                            usuarioId: usuarioId,
+                            token: token,
+                          ),
                         ),
                       );
                     },

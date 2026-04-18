@@ -3,7 +3,8 @@ import 'screens/cuentas/index.dart';
 import 'screens/home_cliente_screen.dart';
 import 'screens/perfil/index.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const MyApp());
 }
 

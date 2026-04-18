@@ -1,3 +1,10 @@
+/// Credenciales de Cloudinary para subir evidencias
+class CloudinaryConfig {
+  static const String cloudName = 'dgwbo6gvt'; // reemplaza con tu cloud name
+  static const String uploadPreset =
+      'evidencias_app'; // reemplaza con tu upload preset
+}
+
 /// Configuración centralizada de la aplicación
 class ApiConfig {
   // Base URL del API
@@ -22,6 +29,19 @@ class ApiConfig {
   static const String vehiculosActualizar =
       '/vehiculos/cliente/'; // + cliente_id
   static const String vehiculosEliminar = '/vehiculos/cliente/'; // + cliente_id
+
+  // Endpoints - Emergencias/Incidentes
+  static const String incidentesCrear = '/incidentes/';
+  static const String incidentesListar = '/incidentes/';
+  static const String incidentesPorUsuario =
+      '/incidentes/usuario/'; // + usuario_id
+  static const String incidentesObtener = '/incidentes/'; // + incidente_id
+  static const String incidentesActualizar = '/incidentes/'; // + incidente_id
+
+  // Endpoints - Evidencias
+  static const String evidenciasCrear = '/evidencias/';
+  static const String evidenciasPorIncidente =
+      '/evidencias/incidente/'; // + incidente_id
 
   // Headers por defecto
   static const Map<String, String> defaultHeaders = {

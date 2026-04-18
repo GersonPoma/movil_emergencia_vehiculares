@@ -45,5 +45,21 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- Permisos de Ubicación -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceso a tu ubicación para enviar emergencias vehiculares rápidamente.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Esta aplicación necesita acceso continuo a tu ubicación para el sistema de emergencia.</string>
+
+	<!-- Permisos de cámara y micrófono -->
+	<key>NSCameraUsageDescription</key>
+	<string>Se necesita acceso a la cámara para capturar fotos como evidencia de la emergencia.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Se necesita acceso al micrófono para grabar audio como evidencia de la emergencia.</string>
+	
+	<!-- Google Maps API Key -->
+	<key>com.google.ios.maps.API_KEY</key>
+	<string>AIAIzaSyAbxE6JWZyUaYUoppWMWAb2XBUksenNCtQ</string>
 </dict>
 </plist>

@@ -1,9 +1,25 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Permisos de ubicación -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Permisos de cámara y micrófono -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
     <application
         android:label="auto_sos"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true">
+        
+        <!-- Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyBcKtB3nrnL8l1hOmDZLvXFqK46PzZoDv8" />
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"

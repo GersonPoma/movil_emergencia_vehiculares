@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:auto_sos/services/emergencias/incidente_service.dart';
 import 'package:auto_sos/services/emergencias/ubicacion_service.dart';
 import 'package:auto_sos/services/emergencias/evidencia_service.dart';
+import 'package:auto_sos/services/ia/procesamiento_ia_service.dart';
 import 'package:auto_sos/widgets/emergencias/index.dart';
 import 'package:auto_sos/models/emergencias/index.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,10 +14,10 @@ class EnviarUbicacionScreen extends StatefulWidget {
   final String token;
 
   const EnviarUbicacionScreen({
-    Key? key,
+    super.key,
     required this.usuarioId,
     required this.token,
-  }) : super(key: key);
+  });
 
   @override
   State<EnviarUbicacionScreen> createState() => _EnviarUbicacionScreenState();
@@ -26,15 +27,25 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
   final UbicacionService _ubicacionService = UbicacionService();
   final IncidenteService _incidenteService = IncidenteService();
   final EvidenciaService _evidenciaService = EvidenciaService();
+  final ProcesamientoIaService _procesamientoIaService =
+      ProcesamientoIaService();
 
   Position? _ubicacionActual;
   bool _cargando = true;
   bool _enviandoEmergencia = false;
   bool _tienePermiso = false;
   bool _servicioHabilitado = true;
+  bool _modoActualizacion = false;
+  String? _mensajeUltimoErrorIa;
+
   Incidente? _incidenteEnviado;
   List<File> _fotos = [];
   File? _audio;
+  List<Evidencia> _evidenciasFotosSubidas = [];
+  Evidencia? _evidenciaAudioSubida;
+  List<String> _rutasFotosSubidas = [];
+  String? _rutaAudioSubido;
+  int _versionEvidenciaWidget = 0;
 
   @override
   void initState() {
@@ -111,7 +122,7 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
       return;
     }
 
-    if (_fotos.isEmpty) {
+    if (_fotos.isEmpty && _evidenciasFotosSubidas.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Debes adjuntar al menos una foto.'),
@@ -121,7 +132,7 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
       return;
     }
 
-    if (_audio == null) {
+    if (_audio == null && _evidenciaAudioSubida == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Debes grabar un audio antes de enviar.'),
@@ -134,45 +145,63 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
     setState(() => _enviandoEmergencia = true);
 
     try {
-      // 1. Crear el incidente
-      final incidente = await _incidenteService.enviarEmergenciaActual(
-        latitud: _ubicacionActual!.latitude,
-        longitud: _ubicacionActual!.longitude,
-        usuarioId: widget.usuarioId,
-        token: widget.token,
-      );
+      final incidente =
+          _incidenteEnviado ??
+          await _incidenteService.enviarEmergenciaActual(
+            latitud: _ubicacionActual!.latitude,
+            longitud: _ubicacionActual!.longitude,
+            usuarioId: widget.usuarioId,
+            token: widget.token,
+          );
 
-      setState(() => _incidenteEnviado = incidente);
+      setState(() {
+        _incidenteEnviado = incidente;
+      });
 
-      // 2. Subir evidencias (fotos y audio) en paralelo
+      if (incidente.id == null) {
+        throw Exception('No se pudo obtener el ID del incidente');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Subiendo evidencias...')),
+          SnackBar(
+            content: Text(
+              _modoActualizacion
+                  ? 'Reenviando evidencias para análisis...'
+                  : 'Subiendo evidencias... ',
+            ),
+          ),
         );
       }
 
-      final tareas = <Future>[
-        for (final foto in _fotos)
-          _evidenciaService.subirYRegistrar(
-            archivo: foto,
-            tipo: 'Foto',
-            incidenteId: incidente.id!,
-            token: widget.token,
-          ),
-        _evidenciaService.subirYRegistrar(
-          archivo: _audio!,
-          tipo: 'Audio',
-          incidenteId: incidente.id!,
-          token: widget.token,
-        ),
-      ];
+      await _sincronizarEvidencias(incidente.id!);
 
-      await Future.wait(tareas, eagerError: false);
+      final urlsFotos = _evidenciasFotosSubidas
+          .map((e) => e.url)
+          .whereType<String>()
+          .toList();
+      final urlAudio = _evidenciaAudioSubida?.url;
+
+      if (urlsFotos.isEmpty || urlAudio == null || urlAudio.isEmpty) {
+        throw Exception('No fue posible preparar todas las evidencias');
+      }
+
+      await _procesamientoIaService.procesarEvidencia(
+        incidenteId: incidente.id!,
+        urlAudio: urlAudio,
+        urlsFotos: urlsFotos,
+        token: widget.token,
+      );
+
+      setState(() {
+        _modoActualizacion = false;
+        _mensajeUltimoErrorIa = null;
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('¡Emergencia enviada exitosamente!'),
+            content: Text('¡Incidente enviado y analizado exitosamente!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -186,6 +215,8 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
       }
 
       if (mounted) _mostrarDialogoConfirmacion(incidente);
+    } on ProcesamientoIaException catch (e) {
+      await _manejarErrorProcesamientoIa(e);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -197,6 +228,162 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
       }
     } finally {
       setState(() => _enviandoEmergencia = false);
+    }
+  }
+
+  Future<void> _sincronizarEvidencias(int incidenteId) async {
+    if (_evidenciasFotosSubidas.isNotEmpty &&
+        !_fotosLocalesCoincidenConSubidas()) {
+      await _eliminarFotosSubidas();
+    }
+
+    if (_evidenciasFotosSubidas.isEmpty) {
+      if (_fotos.isEmpty) {
+        throw Exception('Debes adjuntar al menos una foto.');
+      }
+
+      final fotosSubidas = <Evidencia>[];
+      for (final foto in _fotos) {
+        final evidencia = await _evidenciaService.subirYRegistrar(
+          archivo: foto,
+          tipo: 'Foto',
+          incidenteId: incidenteId,
+          token: widget.token,
+        );
+        fotosSubidas.add(evidencia);
+      }
+
+      _evidenciasFotosSubidas = fotosSubidas
+          .where((e) => e.url != null)
+          .toList();
+      _rutasFotosSubidas = _fotos.map((f) => f.path).toList();
+    }
+
+    if (_evidenciaAudioSubida != null &&
+        _audio != null &&
+        _rutaAudioSubido != _audio!.path) {
+      if (_evidenciaAudioSubida?.id != null) {
+        await _evidenciaService.eliminarEvidencia(
+          evidenciaId: _evidenciaAudioSubida!.id!,
+          token: widget.token,
+        );
+      }
+      _evidenciaAudioSubida = null;
+      _rutaAudioSubido = null;
+    }
+
+    if (_evidenciaAudioSubida == null) {
+      if (_audio == null) {
+        throw Exception('Debes grabar un audio antes de enviar.');
+      }
+
+      final audioSubido = await _evidenciaService.subirYRegistrar(
+        archivo: _audio!,
+        tipo: 'Audio',
+        incidenteId: incidenteId,
+        token: widget.token,
+      );
+
+      _evidenciaAudioSubida = audioSubido;
+      _rutaAudioSubido = _audio!.path;
+    }
+  }
+
+  bool _fotosLocalesCoincidenConSubidas() {
+    if (_rutasFotosSubidas.length != _fotos.length) {
+      return false;
+    }
+
+    for (var i = 0; i < _rutasFotosSubidas.length; i++) {
+      if (_rutasFotosSubidas[i] != _fotos[i].path) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  Future<void> _eliminarFotosSubidas() async {
+    for (final foto in _evidenciasFotosSubidas) {
+      if (foto.id != null) {
+        await _evidenciaService.eliminarEvidencia(
+          evidenciaId: foto.id!,
+          token: widget.token,
+        );
+      }
+    }
+    _evidenciasFotosSubidas = [];
+    _rutasFotosSubidas = [];
+  }
+
+  Future<void> _manejarErrorProcesamientoIa(ProcesamientoIaException e) async {
+    if (e.isAudioInvalido) {
+      if (_evidenciaAudioSubida?.id != null) {
+        try {
+          await _evidenciaService.eliminarEvidencia(
+            evidenciaId: _evidenciaAudioSubida!.id!,
+            token: widget.token,
+          );
+        } catch (_) {}
+      }
+
+      setState(() {
+        _modoActualizacion = true;
+        _mensajeUltimoErrorIa =
+            'Audio no claro: ${e.message}. Vuelve a grabarlo y reintenta.';
+        _evidenciaAudioSubida = null;
+        _rutaAudioSubido = null;
+        _audio = null;
+        _versionEvidenciaWidget++;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_mensajeUltimoErrorIa!),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    if (e.isImagenInvalida) {
+      try {
+        await _eliminarFotosSubidas();
+      } catch (_) {}
+
+      setState(() {
+        _modoActualizacion = true;
+        _mensajeUltimoErrorIa =
+            'Fotos no claras: ${e.message}. Toma nuevas fotos y reintenta.';
+        _fotos = [];
+        _versionEvidenciaWidget++;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_mensajeUltimoErrorIa!),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _modoActualizacion = true;
+      _mensajeUltimoErrorIa = e.message;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error de análisis: ${e.message}'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -281,6 +468,22 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
                       onSolicitarPermiso: _solicitarPermiso,
                       onHabilitarServicio: _habilitarServicio,
                     ),
+                    if (_modoActualizacion)
+                      Container(
+                        width: double.infinity,
+                        margin: const EdgeInsets.only(top: 12),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade50,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Text(
+                          _mensajeUltimoErrorIa ??
+                              'Modo actualización activo. Ajusta las evidencias y reintenta.',
+                          style: TextStyle(color: Colors.orange.shade900),
+                        ),
+                      ),
                     const SizedBox(height: 16),
 
                     // Mapa
@@ -335,6 +538,10 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
 
                     // Evidencias (fotos y audio)
                     EvidenciaCapturaWidget(
+                      key: ValueKey(_versionEvidenciaWidget),
+                      version: _versionEvidenciaWidget,
+                      fotosIniciales: _fotos,
+                      audioInicial: _audio,
                       onFotosChanged: (fotos) => setState(() => _fotos = fotos),
                       onAudioChanged: (audio) => setState(() => _audio = audio),
                     ),
@@ -347,6 +554,8 @@ class _EnviarUbicacionScreenState extends State<EnviarUbicacionScreen> {
                         cargando: _enviandoEmergencia,
                         etiqueta: _enviandoEmergencia
                             ? 'Enviando...'
+                            : _modoActualizacion
+                            ? 'Reenviar Para Analisis'
                             : 'Enviar Emergencia',
                       ),
                   ],

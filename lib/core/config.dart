@@ -42,6 +42,10 @@ class ApiConfig {
   static const String evidenciasCrear = '/evidencias/';
   static const String evidenciasPorIncidente =
       '/evidencias/incidente/'; // + incidente_id
+  static const String evidenciasEliminar = '/evidencias/'; // + evidencia_id
+
+  // Endpoints - IA
+  static const String iaProcesarEvidencia = '/ia/procesar-evidencia';
 
   // Headers por defecto
   static const Map<String, String> defaultHeaders = {

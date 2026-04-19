@@ -9,12 +9,18 @@ import 'package:path_provider/path_provider.dart';
 class EvidenciaCapturaWidget extends StatefulWidget {
   final Function(List<File>) onFotosChanged;
   final Function(File?) onAudioChanged;
+  final List<File> fotosIniciales;
+  final File? audioInicial;
+  final int version;
 
   const EvidenciaCapturaWidget({
-    Key? key,
+    super.key,
     required this.onFotosChanged,
     required this.onAudioChanged,
-  }) : super(key: key);
+    this.fotosIniciales = const [],
+    this.audioInicial,
+    this.version = 0,
+  });
 
   @override
   State<EvidenciaCapturaWidget> createState() => _EvidenciaCapturaWidgetState();
@@ -33,6 +39,9 @@ class _EvidenciaCapturaWidgetState extends State<EvidenciaCapturaWidget> {
   @override
   void initState() {
     super.initState();
+    _fotos = List<File>.from(widget.fotosIniciales);
+    _audio = widget.audioInicial;
+
     AudioPlayer.global.setAudioContext(
       const AudioContext(
         android: AudioContextAndroid(
@@ -51,6 +60,24 @@ class _EvidenciaCapturaWidgetState extends State<EvidenciaCapturaWidget> {
     _player.onPlayerComplete.listen((_) {
       if (mounted) setState(() => _reproduciendo = false);
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant EvidenciaCapturaWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.version == widget.version) return;
+
+    _player.stop();
+    if (_grabando) {
+      _recorder.stop();
+    }
+
+    // didUpdateWidget ocurre durante el ciclo de actualización del padre;
+    // no usar setState aquí evita conflictos de reconstrucción.
+    _fotos = List<File>.from(widget.fotosIniciales);
+    _audio = widget.audioInicial;
+    _grabando = false;
+    _reproduciendo = false;
   }
 
   @override

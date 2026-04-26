@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../services/cuentas/storage_service.dart';
+import '../services/emergencias/incidente_service.dart';
 import 'emergencias/enviar_ubicacion_screen.dart';
 import 'emergencias/historial_incidentes_screen.dart';
+import 'talleres/orden_servicio_screen.dart';
 
 class HomeClienteScreen extends StatefulWidget {
   const HomeClienteScreen({Key? key}) : super(key: key);
@@ -148,15 +150,41 @@ class _HomeClienteScreenState extends State<HomeClienteScreen> {
                     },
                   ),
 
-                  // Card Perfil
+                  // Card Orden de Servicio
                   _buildOptionCard(
-                    icon: Icons.person,
-                    label: 'Mi Perfil',
+                    icon: Icons.build_circle,
+                    label: 'Orden de\nServicio',
                     color: Colors.green,
-                    onTap: () {
-                      // TODO: Navegar a pantalla de perfil
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Mi Perfil')),
+                    onTap: () async {
+                      final token = await _storageService.getToken();
+                      final usuarioId = await _storageService.getIdUsuario();
+                      if (!mounted) return;
+                      if (token == null || usuarioId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Sesión no válida')),
+                        );
+                        return;
+                      }
+                      final incidente = await IncidenteService()
+                          .obtenerActivoPorUsuario(
+                            usuarioId: usuarioId,
+                            token: token,
+                          );
+                      if (!mounted) return;
+                      if (incidente == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('No tienes una emergencia activa.'),
+                          ),
+                        );
+                        return;
+                      }
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => OrdenServicioScreen(
+                            incidenteId: incidente.id!,
+                          ),
+                        ),
                       );
                     },
                   ),

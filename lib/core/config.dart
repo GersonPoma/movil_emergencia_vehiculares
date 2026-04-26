@@ -35,6 +35,8 @@ class ApiConfig {
   static const String incidentesListar = '/incidentes/';
   static const String incidentesPorUsuario =
       '/incidentes/usuario/'; // + usuario_id
+  static const String incidentesActivoPorUsuario =
+      '/incidentes/usuario/'; // + usuario_id + /activo
   static const String incidentesObtener = '/incidentes/'; // + incidente_id
   static const String incidentesActualizar = '/incidentes/'; // + incidente_id
 
@@ -46,6 +48,13 @@ class ApiConfig {
 
   // Endpoints - IA
   static const String iaProcesarEvidencia = '/ia/procesar-evidencia';
+
+  // Endpoints - Órdenes de servicio
+  static const String ordenPorIncidente =
+      '/ordenes-servicio/incidente/'; // + incidente_id
+
+  // Endpoints - FCM
+  static const String fcmToken = '/usuarios/'; // + usuario_id + /fcm-token
 
   // Headers por defecto
   static const Map<String, String> defaultHeaders = {

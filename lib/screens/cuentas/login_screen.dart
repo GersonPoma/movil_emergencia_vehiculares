@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/services/fcm_service.dart';
+import '../../main.dart';
 import '../../models/cuentas/usuario_model.dart';
 import '../../services/cuentas/auth_service.dart';
 import '../../services/cuentas/storage_service.dart';
@@ -55,6 +57,13 @@ class _LoginCuentasScreenState extends State<LoginCuentasScreen> {
         idTaller: response.idTaller,
         rol: response.rol,
         privilegios: response.privilegios,
+      );
+
+      // Inicializar FCM y registrar token del dispositivo
+      await FcmService().inicializar(
+        usuarioId: response.idUsuario,
+        token: response.accessToken,
+        navigatorKey: navigatorKey,
       );
 
       setState(() {

@@ -164,6 +164,35 @@ class IncidenteService {
     );
   }
 
+  /// Obtener el incidente activo (EN_PROCESO) del usuario, o null si no hay
+  Future<Incidente?> obtenerActivoPorUsuario({
+    required int usuarioId,
+    required String token,
+  }) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.incidentesActivoPorUsuario}$usuarioId/activo',
+    );
+
+    try {
+      final response = await http.get(
+        url,
+        headers: ApiConfig.getAuthHeaders(token),
+      );
+
+      if (response.statusCode == 200) {
+        return Incidente.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 404) {
+        return null;
+      } else if (response.statusCode == 401) {
+        throw Exception('No autorizado');
+      } else {
+        throw Exception('Error al obtener incidente activo: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
+  }
+
   /// Cancelar un incidente
   Future<Incidente> cancelarIncidente({
     required int incidenteId,

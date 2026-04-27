@@ -8,10 +8,13 @@ class CloudinaryConfig {
 /// Configuración centralizada de la aplicación
 class ApiConfig {
   // Base URL del API
-  static const String baseUrl = 'http://192.168.100.90:8000';
+  static const String baseUrl =
+      'https://backend-emergencia-vehiculares.onrender.com';
 
   // Para emulador Android, cambiar a:
   // static const String baseUrl = 'http://10.0.2.2:8000';
+  // Para red local, cambiar a:
+  // static const String baseUrl = 'http://192.168.100.90:8000';
 
   // Endpoints
   static const String authLogin = '/auth/login';
@@ -39,7 +42,8 @@ class ApiConfig {
       '/incidentes/usuario/'; // + usuario_id + /activo
   static const String incidentesObtener = '/incidentes/'; // + incidente_id
   static const String incidentesActualizar = '/incidentes/'; // + incidente_id
-  static const String incidentesDetalle = '/incidentes/'; // + incidente_id + /detalle
+  static const String incidentesDetalle =
+      '/incidentes/'; // + incidente_id + /detalle
 
   // Endpoints - Evidencias
   static const String evidenciasCrear = '/evidencias/';

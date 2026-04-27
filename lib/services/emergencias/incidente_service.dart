@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:auto_sos/models/emergencias/incidente_model.dart';
+import 'package:auto_sos/models/emergencias/incidente_detalle_model.dart';
 import 'package:auto_sos/core/config.dart';
 
 class IncidenteService {
@@ -162,6 +163,35 @@ class IncidenteService {
       usuarioId: usuarioId,
       token: token,
     );
+  }
+
+  /// Obtener detalle completo de un incidente
+  Future<IncidenteDetalle> obtenerDetalle({
+    required int incidenteId,
+    required String token,
+  }) async {
+    final url = Uri.parse(
+      '${ApiConfig.baseUrl}${ApiConfig.incidentesDetalle}$incidenteId/detalle',
+    );
+
+    try {
+      final response = await http.get(
+        url,
+        headers: ApiConfig.getAuthHeaders(token),
+      );
+
+      if (response.statusCode == 200) {
+        return IncidenteDetalle.fromJson(jsonDecode(response.body));
+      } else if (response.statusCode == 404) {
+        throw Exception('Incidente no encontrado');
+      } else if (response.statusCode == 401) {
+        throw Exception('No autorizado');
+      } else {
+        throw Exception('Error al obtener detalle: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error de conexión: $e');
+    }
   }
 
   /// Obtener el incidente activo (EN_PROCESO) del usuario, o null si no hay

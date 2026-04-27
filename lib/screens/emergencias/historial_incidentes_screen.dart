@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:auto_sos/services/emergencias/incidente_service.dart';
 import 'package:auto_sos/models/emergencias/index.dart';
 import 'package:intl/intl.dart';
-import 'evidencias_incidente_screen.dart';
+import 'detalle_incidente_screen.dart';
 
 class HistorialIncidentesScreen extends StatefulWidget {
   final int usuarioId;
@@ -316,45 +316,33 @@ class _HistorialIncidentesScreenState extends State<HistorialIncidentesScreen> {
             ),
             const SizedBox(height: 12),
 
-            Wrap(
-              spacing: 4,
-              runSpacing: 0,
+            Row(
               children: [
-                TextButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Ver ubicación en mapa')),
-                    );
-                  },
-                  icon: const Icon(Icons.map),
-                  label: const Text('Ver en Mapa'),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (_) => EvidenciasIncidenteScreen(
+                        builder: (_) => DetalleIncidenteScreen(
                           incidenteId: incidente.id!,
                           token: widget.token,
                         ),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.photo_library, color: Colors.purple),
-                  label: const Text(
-                    'Evidencias',
-                    style: TextStyle(color: Colors.purple),
+                    ),
+                    icon: const Icon(Icons.info_outline),
+                    label: const Text('Ver Detalle'),
                   ),
                 ),
-                if (incidente.estado.toLowerCase() == 'pendiente')
-                  TextButton.icon(
+                if (incidente.estado.toLowerCase() == 'pendiente') ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton.icon(
                     onPressed: () => _confirmarCancelar(incidente),
                     icon: const Icon(Icons.cancel, color: Colors.red),
-                    label: const Text(
-                      'Cancelar',
-                      style: TextStyle(color: Colors.red),
-                    ),
+                    label: const Text('Cancelar',
+                        style: TextStyle(color: Colors.red)),
+                    style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.red)),
                   ),
+                ],
               ],
             ),
           ],

@@ -39,6 +39,7 @@ class ApiConfig {
       '/incidentes/usuario/'; // + usuario_id + /activo
   static const String incidentesObtener = '/incidentes/'; // + incidente_id
   static const String incidentesActualizar = '/incidentes/'; // + incidente_id
+  static const String incidentesDetalle = '/incidentes/'; // + incidente_id + /detalle
 
   // Endpoints - Evidencias
   static const String evidenciasCrear = '/evidencias/';

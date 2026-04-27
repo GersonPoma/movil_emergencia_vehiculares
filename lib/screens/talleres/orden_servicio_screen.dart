@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart' show StripeException;
 import 'package:auto_sos/models/talleres/orden_servicio_model.dart';
 import 'package:auto_sos/services/cuentas/storage_service.dart';
+import 'package:auto_sos/services/pagos/stripe_service.dart';
 import 'package:auto_sos/services/talleres/orden_service.dart';
 import 'package:auto_sos/widgets/talleres/orden_estado_chip.dart';
 
@@ -17,9 +19,11 @@ class OrdenServicioScreen extends StatefulWidget {
 class _OrdenServicioScreenState extends State<OrdenServicioScreen> {
   final OrdenService _ordenService = OrdenService();
   final StorageService _storageService = StorageService();
+  final StripeService _stripeService = StripeService();
 
   OrdenServicio? _orden;
   bool _cargando = true;
+  bool _pagando = false;
   Timer? _timer;
 
   @override
@@ -65,6 +69,58 @@ class _OrdenServicioScreenState extends State<OrdenServicioScreen> {
       return 'Menos de 1 min';
     }
     return tiempo;
+  }
+
+  Future<void> _pagar(int transaccionId) async {
+    final token = await _storageService.getToken();
+    if (token == null || !mounted) return;
+
+    setState(() => _pagando = true);
+
+    try {
+      await _stripeService.procesarPago(
+        transaccionId: transaccionId,
+        token: token,
+      );
+
+      if (!mounted) return;
+      _timer?.cancel();
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('¡Pago exitoso!'),
+          content: const Text('Tu pago fue procesado correctamente.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pop();
+              },
+              child: const Text('Volver al inicio'),
+            ),
+          ],
+        ),
+      );
+    } on StripeException catch (e) {
+      if (!mounted) return;
+      final msg = e.error.localizedMessage ?? 'Pago cancelado.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.orange),
+      );
+    } catch (e) {
+      print('error al procesar pago: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al procesar el pago: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _pagando = false);
+    }
   }
 
   @override
@@ -177,6 +233,21 @@ class _OrdenServicioScreenState extends State<OrdenServicioScreen> {
             color: Colors.grey,
           ),
 
+          if (orden.tieneTransaccion) ...[
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _pagando ? null : () => _pagar(orden.transaccionId!),
+                icon: const Icon(Icons.payment),
+                label: const Text('Pagar'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 24),
 
           // Actualizando
@@ -218,10 +289,7 @@ class _OrdenServicioScreenState extends State<OrdenServicioScreen> {
             children: [
               Text(
                 titulo,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
               Text(
                 valor,

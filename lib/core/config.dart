@@ -53,6 +53,12 @@ class ApiConfig {
   static const String ordenPorIncidente =
       '/ordenes-servicio/incidente/'; // + incidente_id
 
+  // Endpoints - Transacciones / Pagos
+  static const String transaccionStripeIntent =
+      '/transacciones/'; // + transaccion_id + /stripe-intent
+  static const String transaccionEstado =
+      '/transacciones/'; // + transaccion_id + /estado
+
   // Endpoints - FCM
   static const String fcmToken = '/usuarios/'; // + usuario_id + /fcm-token
 

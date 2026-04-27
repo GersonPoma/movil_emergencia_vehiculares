@@ -5,6 +5,8 @@ class OrdenServicio {
   final String tiempoEstimadoLlegada;
   final String estado;
   final int asignacionCandidatoId;
+  final bool tieneTransaccion;
+  final int? transaccionId;
 
   OrdenServicio({
     required this.id,
@@ -13,6 +15,8 @@ class OrdenServicio {
     required this.tiempoEstimadoLlegada,
     required this.estado,
     required this.asignacionCandidatoId,
+    required this.tieneTransaccion,
+    required this.transaccionId,
   });
 
   factory OrdenServicio.fromJson(Map<String, dynamic> json) {
@@ -24,6 +28,8 @@ class OrdenServicio {
       tiempoEstimadoLlegada: json['tiempo_estimado_llegada'] as String,
       estado: json['estado'] as String,
       asignacionCandidatoId: json['asignacion_candidato_id'] as int,
+      tieneTransaccion: json['tiene_transaccion'] as bool? ?? false,
+      transaccionId: json['transaccion_id'] as int?,
     );
   }
 }
